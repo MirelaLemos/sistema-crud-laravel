@@ -2,6 +2,14 @@
 
 @section('title', $product->name)
 
+@role('admin')
+  <a href="{{ route('products.edit',$product) }}" class="btn btn-warning">Editar</a>
+  <form action="{{ route('products.destroy',$product) }}" method="POST" style="display:inline">
+    @csrf @method('DELETE')
+    <button class="btn btn-danger">Excluir</button>
+  </form>
+@endrole
+
 @section('content')
 <div class="row">
   <div class="col-md-6">
