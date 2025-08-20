@@ -63,12 +63,13 @@
           <div id="cart-total" class="fs-5 fw-semibold mb-3">
             Total: R$ {{ number_format($total,2,',','.') }}
           </div>
-          <form method="POST" action="{{ route('checkout') }}" class="d-grid">
-            @csrf
-            <button class="btn btn-success btn-lg">
-              <i class="bi bi-credit-card"></i> Finalizar Compra
-            </button>
-          </form>
+
+          {{-- Fluxo novo: GET → checkout.begin --}}
+            <div class="d-grid">
+              <a href="{{ route('checkout.show') }}" id="btnCheckout" class="btn btn-success btn-lg">
+                <i class="bi bi-credit-card"></i> Finalizar Compra
+              </a>
+            </div>
         </div>
       </div>
     </div>
@@ -84,7 +85,7 @@ const moneyBR = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'B
 function updateQty(row, qty){
   const url = row.dataset.url;
   fetch(url, {
-    method: 'POST',
+    method: 'POST', // rota cart.qty é POST /cart/{id}/qty
     credentials: 'same-origin',
     headers: {
       'X-CSRF-TOKEN': csrf,

@@ -30,21 +30,21 @@
 
   @yield('head')
 </head>
+
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container-lg">
-      <a class="navbar-brand fw-bold" href="{{ route('products.index') }}">
-        <i class="bi bi-bag"></i> Minha Loja
-      </a>
-      @php
+    @php
   $cart = session('cart', []);
   $cartTotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
   $cartQty   = collect($cart)->sum(fn($i) => $i['qty']);
 @endphp
 
 <ul class="navbar-nav ms-auto align-items-center gap-3">
-  <li class="nav-item"><a class="nav-link" href="{{ route('products.index') }}"><i class="bi bi-grid"></i> Produtos</a></li>
-  
+  <li class="nav-item">
+    <a class="nav-link" href="{{ route('products.index') }}">
+      <i class="bi bi-grid"></i> Produtos
+    </a>
+  </li>
 
   {{-- Pill do carrinho --}}
   <li class="nav-item">
@@ -58,8 +58,34 @@
       </span>
     </a>
   </li>
+
+  {{-- Links de auth --}}
+  @guest
+    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Entrar</a></li>
+    <li class="nav-item"><a class="btn btn-success btn-sm" href="{{ route('register') }}">Cadastrar</a></li>
+  @endguest
+
+  @auth
+    <li class="nav-item dropdown">
+      <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+        <i class="bi bi-person-circle me-1"></i> {{ auth()->user()->name }}
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        {{-- Se você tiver a rota de perfil do Breeze, pode habilitar: --}}
+        {{-- <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Perfil</a></li>
+        <li><hr class="dropdown-divider"></li> --}}
+        <li class="px-3">
+          <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn btn-link text-danger p-0">
+              <i class="bi bi-box-arrow-right me-1"></i> Sair
+            </button>
+          </form>
+        </li>
+      </ul>
+    </li>
+  @endauth
 </ul>
-    </div>
   </nav>
 
   <div class="container-lg">

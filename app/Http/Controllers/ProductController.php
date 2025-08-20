@@ -1,4 +1,69 @@
 <?php
+// namespace App\Http\Controllers;
+
+// use App\Models\Product;
+// use Illuminate\Http\Request;
+
+// class ProductController extends Controller
+// {
+//     /**
+//      * Display a listing of the resource.
+//      */
+//     public function index()
+// {
+//     $produtos = \App\Models\Product::latest()->paginate(10); 
+//     return view('products.index', compact('produtos'));
+//     $products = Product::latest()->paginate(12);
+
+//     $cart = session('cart', []);
+//     $cartTotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
+//     $cartQty   = collect($cart)->sum(fn($i) => $i['qty']);
+
+//     return view('products.index', compact('products', 'cartTotal', 'cartQty'));
+// }
+
+// public function create() { return view('products.create'); }
+
+// public function store(Request $request) {
+//     $data = $request->validate([
+//         'name'=>'required|string|max:255',
+//         'description'=>'nullable|string',
+//         'price'=>'required|numeric|min:0',
+//         'photo'=>'nullable|image|max:2048'
+//     ]);
+//     if ($request->hasFile('photo')) {
+//         $data['photo_path'] = $request->file('photo')->store('products','public');
+//     }
+//     Product::create($data);
+//     return redirect()->route('products.index')->with('ok','Produto criado!');
+// }
+
+// public function edit(Product $product) { return view('products.edit', compact('product')); }
+
+// public function update(Request $request, Product $product) {
+//     $data = $request->validate([
+//         'name'=>'required|string|max:255',
+//         'description'=>'nullable|string',
+//         'price'=>'required|numeric|min:0',
+//         'photo'=>'nullable|image|max:2048'
+//     ]);
+//     if ($request->hasFile('photo')) {
+//         $data['photo_path'] = $request->file('photo')->store('products','public');
+//     }
+//     $product->update($data);
+//     return redirect()->route('products.index')->with('ok','Produto atualizado!');
+// }
+
+// public function destroy(Product $product) {
+//     $product->delete();
+//     return back()->with('ok','Produto removido!');
+// }
+
+// public function show(Product $product) {
+//     return view('products.show', compact('product'));
+// }
+
+// }
 
 namespace App\Http\Controllers;
 
@@ -7,59 +72,72 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-{
-    $products = Product::latest()->paginate(12);
-
-    $cart = session('cart', []);
-    $cartTotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
-    $cartQty   = collect($cart)->sum(fn($i) => $i['qty']);
-
-    return view('products.index', compact('products', 'cartTotal', 'cartQty'));
-}
-
-public function create() { return view('products.create'); }
-
-public function store(Request $request) {
-    $data = $request->validate([
-        'name'=>'required|string|max:255',
-        'description'=>'nullable|string',
-        'price'=>'required|numeric|min:0',
-        'photo'=>'nullable|image|max:2048'
-    ]);
-    if ($request->hasFile('photo')) {
-        $data['photo_path'] = $request->file('photo')->store('products','public');
+    // LISTAR (público)
+    public function index(Request $request)
+    {
+        $products = Product::latest()->paginate(12);
+        return view('products.index', ['produtos' => $products]);
     }
-    Product::create($data);
-    return redirect()->route('products.index')->with('ok','Produto criado!');
-}
 
-public function edit(Product $product) { return view('products.edit', compact('product')); }
-
-public function update(Request $request, Product $product) {
-    $data = $request->validate([
-        'name'=>'required|string|max:255',
-        'description'=>'nullable|string',
-        'price'=>'required|numeric|min:0',
-        'photo'=>'nullable|image|max:2048'
-    ]);
-    if ($request->hasFile('photo')) {
-        $data['photo_path'] = $request->file('photo')->store('products','public');
+    // VER (público)
+    public function show(Product $product)
+    {
+        return view('products.show', compact('product'));
     }
-    $product->update($data);
-    return redirect()->route('products.index')->with('ok','Produto atualizado!');
-}
 
-public function destroy(Product $product) {
-    $product->delete();
-    return back()->with('ok','Produto removido!');
-}
+    // NOVO (admin)
+    public function create()
+    {
+        return view('products.create');
+    }
 
-public function show(Product $product) {
-    return view('products.show', compact('product'));
-}
+    // SALVAR (admin)
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name'        => ['required','string','min:3','max:150'],
+            'price'       => ['required','numeric','min:0'],
+            'stock'       => ['required','integer','min:0'],
+            'description' => ['nullable','string','max:2000'],
+        ]);
 
+        $product = Product::create($data);
+
+        return redirect()
+            ->route('products.show', $product)
+            ->with('ok', 'Produto criado com sucesso!');
+    }
+
+    // EDITAR (admin)
+    public function edit(Product $product)
+    {
+        return view('products.edit', compact('product'));
+    }
+
+    // ATUALIZAR (admin)
+    public function update(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'name'        => ['required','string','min:3','max:150'],
+            'price'       => ['required','numeric','min:0'],
+            'stock'       => ['required','integer','min:0'],
+            'description' => ['nullable','string','max:2000'],
+        ]);
+
+        $product->update($data);
+
+        return redirect()
+            ->route('products.show', $product)
+            ->with('ok', 'Produto atualizado com sucesso!');
+    }
+
+    // EXCLUIR (admin)
+    public function destroy(Product $product)
+    {
+        $product->delete();
+
+        return redirect()
+            ->route('products.index')
+            ->with('ok', 'Produto excluído com sucesso!');
+    }
 }
