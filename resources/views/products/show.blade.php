@@ -1,3 +1,5 @@
+{{-- resources/views/products/show.blade.php --}}
+
 @extends('layout')
 
 @section('title', $product->name)
@@ -14,10 +16,18 @@
 @endrole
 <div class="row">
   <div class="col-md-6">
-    @if($product->photo_path)
-      <img src="{{ asset('storage/'.$product->photo_path) }}" class="img-fluid mb-3" alt="{{ $product->name }}">
+    @if(!empty($product->photo_path))
+      <img
+        src="{{ Storage::url($product->photo_path) }}"
+        alt="{{ $product->name }}"
+        style="max-width:100%; height:auto"
+        loading="lazy">
     @else
-      <img src="https://via.placeholder.com/400x300?text=Sem+Foto" class="img-fluid mb-3" alt="{{ $product->name }}">
+      <img
+        src="https://via.placeholder.com/800x600?text=Produto"
+        alt="{{ $product->name }}"
+        style="max-width:100%; height:auto"
+        loading="lazy">
     @endif
   </div>
   <div class="col-md-6">

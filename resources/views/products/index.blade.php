@@ -4,7 +4,10 @@
 
 @section('content')
   @php($produtos = $produtos ?? collect())
-  @php use Illuminate\Support\Str; @endphp
+  @php
+    use Illuminate\Support\Str;
+    use Illuminate\Support\Facades\Storage; // 👈 importa o Storage no Blade
+  @endphp
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Produtos</h1>
@@ -26,9 +29,18 @@
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">
         <div class="card h-100">
           @if(!empty($product->photo_path))
-            <img src="{{ asset('storage/'.$product->photo_path) }}" class="thumb" alt="{{ $product->name }}">
+            {{-- Usa Storage::url() para funcionar com public OU S3 --}}
+            <img
+              src="{{ Storage::url($product->photo_path) }}"
+              class="thumb"
+              alt="{{ $product->name }}"
+              loading="lazy">
           @else
-            <img src="https://via.placeholder.com/600x400?text=Produto" class="thumb" alt="{{ $product->name }}">
+            <img
+              src="https://via.placeholder.com/600x400?text=Produto"
+              class="thumb"
+              alt="{{ $product->name }}"
+              loading="lazy">
           @endif
 
           <div class="card-body d-flex flex-column">
