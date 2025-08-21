@@ -1,5 +1,8 @@
 @extends('layout')
-@php use Illuminate\Support\Facades\Storage; @endphp
+@php
+  use Illuminate\Support\Facades\Storage;
+  use Illuminate\Support\Str;
+@endphp
 
 @section('title','Editar Produto')
 
@@ -12,27 +15,43 @@
 
   <div class="mb-3">
     <label class="form-label">Nome</label>
-    <input type="text" name="name" class="form-control" value="{{ $product->name }}" required>
+    <input type="text" name="name" class="form-control" value="{{ old('name',$product->name) }}" required>
   </div>
 
   <div class="mb-3">
     <label class="form-label">Descrição</label>
-    <textarea name="description" class="form-control">{{ $product->description }}</textarea>
+    <textarea name="description" class="form-control">{{ old('description',$product->description) }}</textarea>
   </div>
 
   <div class="mb-3">
     <label class="form-label">Preço</label>
-    <input type="number" step="0.01" name="price" class="form-control" value="{{ $product->price }}" required>
+    <input type="number" step="0.01" name="price" class="form-control" value="{{ old('price',$product->price) }}" required>
   </div>
 
   <div class="mb-3">
     <label class="form-label">Foto</label>
     <input type="file" name="photo" class="form-control">
-    @if($product->photo_path)
-      <p class="mt-2">Atual: <img src="{{ asset('storage/'.$product->photo_path) }}" width="100"></p>
+
+    @php
+      $img = null;
+      if (!empty($product->photo_url)) {
+          $img = $product->photo_url;
+      } elseif (!empty($product->photo_path)) {
+          $img = Str::startsWith($product->photo_path, ['http://','https://'])
+              ? $product->photo_path
+              : Storage::url($product->photo_path);
+      }
+    @endphp
+
+    @if($img)
+      <p class="mt-2">
+        <strong>Atual:</strong><br>
+        <img src="{{ $img }}" alt="{{ $product->name }}" class="img-thumbnail" style="max-width: 200px">
+      </p>
     @endif
   </div>
 
   <button type="submit" class="btn btn-primary">Atualizar</button>
+  <a href="{{ route('products.index') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 @endsection
