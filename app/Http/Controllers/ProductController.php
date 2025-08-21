@@ -29,28 +29,29 @@ class ProductController extends Controller
     }
 
     // SALVAR (admin)
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'min:3', 'max:150'],
+            'price'       => ['required', 'numeric', 'min:0'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'photo'       => ['nullable', 'image', 'max:2048'], // 2MB
+        ]);
 
+        // usa o disco padrão (public ou s3), conforme FILESYSTEM_DISK
+        $disk = config('filesystems.default');
 
-            public function store(Request $request)
-                {
-                    $data = $request->validate([
-                        'name'        => ['required','string','min:3','max:150'],
-                        'price'       => ['required','numeric','min:0'],
-                        'description' => ['nullable','string','max:2000'],
-                        // 'photo' => ['nullable','image','max:2048'] // se quiser validar a foto
-                    ]);
+        if ($request->hasFile('photo')) {
+            // salva com visibilidade pública (útil no S3)
+            $data['photo_path'] = $request->file('photo')->storePublicly('products', $disk);
+        }
 
-                    // (opcional) upload da foto
-                    if ($request->hasFile('photo')) {
-                        $data['photo_path'] = $request->file('photo')->store('products', 'public');
-                    }
+        $product = Product::create($data);
 
-                    $product = Product::create($data);
-
-                    return redirect()->route('products.show', $product)
-                                    ->with('ok', 'Produto criado com sucesso!');
-                }
-
+        return redirect()
+            ->route('products.show', $product)
+            ->with('ok', 'Produto criado com sucesso!');
+    }
 
     // EDITAR (admin)
     public function edit(Product $product)
@@ -60,44 +61,61 @@ class ProductController extends Controller
 
     // ATUALIZAR (admin)
     public function update(Request $request, Product $product)
-                {
-                    $data = $request->validate([
-                        'name'        => ['required','string','min:3','max:150'],
-                        'price'       => ['required','numeric','min:0'],
-                        'description' => ['nullable','string','max:2000'],
+    {
+        $data = $request->validate([
+            'name'        => ['required', 'string', 'min:3', 'max:150'],
+            'price'       => ['required', 'numeric', 'min:0'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'photo'       => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        $disk = config('filesystems.default');
+
+        if ($request->hasFile('photo')) {
+            // remove a foto antiga (no mesmo disk atual)
+            if ($product->photo_path) {
+                try {
+                    Storage::disk($disk)->delete($product->photo_path);
+                } catch (\Throwable $e) {
+                    Log::warning('Falha ao remover imagem antiga', [
+                        'path' => $product->photo_path,
+                        'error' => $e->getMessage(),
                     ]);
-
-                    if ($request->hasFile('photo')) {
-                        // apaga a antiga se quiser
-                        if ($product->photo_path) {
-                            Storage::disk('public')->delete($product->photo_path);
-                        }
-                        $data['photo_path'] = $request->file('photo')->store('products', 'public');
-                    }
-
-                    $product->update($data);
-
-                    return redirect()->route('products.show', $product)
-                                    ->with('ok', 'Produto atualizado com sucesso!');
                 }
-            
+            }
+
+            $data['photo_path'] = $request->file('photo')->storePublicly('products', $disk);
+        }
+
+        $product->update($data);
+
+        return redirect()
+            ->route('products.show', $product)
+            ->with('ok', 'Produto atualizado com sucesso!');
+    }
 
     // EXCLUIR (admin)
     public function destroy(Product $product)
     {
+        $disk = config('filesystems.default');
+
         try {
             if ($product->photo_path) {
-                Storage::disk('public')->delete($product->photo_path);
+                Storage::disk($disk)->delete($product->photo_path);
             }
+
             $product->delete();
 
             return redirect()
                 ->route('products.index')
                 ->with('ok', 'Produto excluído com sucesso!');
         } catch (\Throwable $e) {
-            Log::error('products.destroy', ['msg'=>$e->getMessage(), 'trace'=>$e->getTraceAsString()]);
-            return back()->withErrors('Falha ao excluir: '.$e->getMessage());
+            Log::error('products.destroy', [
+                'msg'   => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors('Falha ao excluir: ' . $e->getMessage());
         }
     }
-
 }
