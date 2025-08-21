@@ -2,6 +2,9 @@
 
 @section('title', $product->name)
 
+
+
+@section('content')
 @role('admin')
   <a href="{{ route('products.edit',$product) }}" class="btn btn-warning">Editar</a>
   <form action="{{ route('products.destroy',$product) }}" method="POST" style="display:inline">
@@ -9,8 +12,6 @@
     <button class="btn btn-danger">Excluir</button>
   </form>
 @endrole
-
-@section('content')
 <div class="row">
   <div class="col-md-6">
     @if($product->photo_path)
