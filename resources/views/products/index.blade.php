@@ -32,14 +32,12 @@
             $img = null;
 
             if (!empty($product->photo_url)) {
-              // se já salva a URL completa no banco
+              // se já salva URL completa, usa direto
               $img = $product->photo_url;
 
             } elseif (!empty($product->photo_path)) {
-              // se salva só o caminho (ex: "products/abc.png")
+              // se salva só o caminho (ex: "products/abc.png"), força S3
               $path = $product->photo_path;
-
-              // 👉 força gerar URL pelo S3 (evita /products sem /storage)
               $img = Str::startsWith($path, ['http://','https://'])
                   ? $path
                   : Storage::disk('s3')->url($path);
