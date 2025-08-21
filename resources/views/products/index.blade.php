@@ -6,7 +6,7 @@
   @php($produtos = $produtos ?? collect())
   @php
     use Illuminate\Support\Str;
-    use Illuminate\Support\Facades\Storage; // 👈 importa o Storage no Blade
+    use Illuminate\Support\Facades\Storage;
   @endphp
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -28,20 +28,24 @@
     @forelse($produtos as $product)
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">
         <div class="card h-100">
-          @if(!empty($product->photo_path))
-            {{-- Usa Storage::url() para funcionar com public OU S3 --}}
-            <img
-              src="{{ Storage::url($product->photo_path) }}"
-              class="thumb"
-              alt="{{ $product->name }}"
-              loading="lazy">
-          @else
-            <img
-              src="https://via.placeholder.com/600x400?text=Produto"
-              class="thumb"
-              alt="{{ $product->name }}"
-              loading="lazy">
-          @endif
+          @php
+            $img = null;
+            if (!empty($product->photo_url)) {
+                // se já salva a URL completa no banco
+                $img = $product->photo_url;
+            } elseif (!empty($product->photo_path)) {
+                // se salva só o caminho (ex: "products/abc.png")
+                $img = Str::startsWith($product->photo_path, ['http://','https://'])
+                    ? $product->photo_path
+                    : Storage::url($product->photo_path);
+            }
+          @endphp
+
+          <img
+            src="{{ $img ?: 'https://via.placeholder.com/600x400?text=Produto' }}"
+            class="thumb"
+            alt="{{ $product->name }}"
+            loading="lazy">
 
           <div class="card-body d-flex flex-column">
             <h6 class="text-muted mb-1">{{ Str::limit($product->name, 40) }}</h6>

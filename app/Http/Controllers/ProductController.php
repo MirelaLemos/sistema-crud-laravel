@@ -30,27 +30,35 @@ class ProductController extends Controller
 
     // SALVAR (admin)
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name'        => ['required', 'string', 'min:3', 'max:150'],
-            'price'       => ['required', 'numeric', 'min:0'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'photo'       => ['nullable', 'image', 'max:2048'], // 2MB
-        ]);
+{
+    $data = $request->validate([
+        'name'        => ['required', 'string', 'min:3', 'max:150'],
+        'price'       => ['required', 'numeric', 'min:0'],
+        'description' => ['nullable', 'string', 'max:2000'],
+        'photo'       => ['nullable', 'image', 'max:2048'], // 2MB
+    ]);
 
-        if ($request->hasFile('photo')) {
-            $path = Storage::putFile('products', $request->file('photo'), [
-                'visibility' => 'public', // S3 precisa disso, local ignora
-            ]);
-            $data['photo_path'] = $path; // <-- FALTAVA ISSO
-        }
+    if ($request->hasFile('photo')) {
+        $file = $request->file('photo');
 
-        $product = Product::create($data);
+        // grava em 'products' no DISCO PADRÃO (FILESYSTEM_DISK)
+        // - local => public/storage/products/...
+        // - s3    => s3://minha-loja/products/...
+        // não usa ACL (storePublicly) pra evitar erro em buckets com ACL desativada
+        $path = $file->store('products');
 
-        return redirect()
-            ->route('products.show', $product)
-            ->with('ok', 'Produto criado com sucesso!');
+        // salva apenas o caminho; a view usa Storage::url($product->photo_path)
+        $data['photo_path'] = $path;
+
+        
     }
+    $product = Product::create($data);
+
+    return redirect()
+        ->route('products.show', $product)
+        ->with('ok', 'Produto criado com sucesso!');
+}
+
 
     // EDITAR (admin)
     public function edit(Product $product)
