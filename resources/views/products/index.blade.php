@@ -30,14 +30,19 @@
         <div class="card h-100">
           @php
             $img = null;
+
             if (!empty($product->photo_url)) {
-                // se já salva a URL completa no banco
-                $img = $product->photo_url;
+              // se já salva a URL completa no banco
+              $img = $product->photo_url;
+
             } elseif (!empty($product->photo_path)) {
-                // se salva só o caminho (ex: "products/abc.png")
-                $img = Str::startsWith($product->photo_path, ['http://','https://'])
-                    ? $product->photo_path
-                    : Storage::url($product->photo_path);
+              // se salva só o caminho (ex: "products/abc.png")
+              $path = $product->photo_path;
+
+              // 👉 força gerar URL pelo S3 (evita /products sem /storage)
+              $img = Str::startsWith($path, ['http://','https://'])
+                  ? $path
+                  : Storage::disk('s3')->url($path);
             }
           @endphp
 
@@ -57,12 +62,10 @@
             </div>
 
             <div class="mt-auto d-grid gap-2">
-              {{-- Detalhes (GET) --}}
               <a href="{{ route('products.show',$product) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-eye"></i> Detalhes
               </a>
 
-              {{-- Adicionar no carrinho (POST) --}}
               @if (Route::has('cart.add'))
                 <form method="POST" action="{{ route('cart.add',$product) }}" class="d-inline">
                   @csrf
