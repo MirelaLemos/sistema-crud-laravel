@@ -38,12 +38,11 @@ class ProductController extends Controller
             'photo'       => ['nullable', 'image', 'max:2048'], // 2MB
         ]);
 
-        // usa o disco padrão (public ou s3), conforme FILESYSTEM_DISK
-        $disk = config('filesystems.default');
-
         if ($request->hasFile('photo')) {
-            // salva com visibilidade pública (útil no S3)
-            $data['photo_path'] = $request->file('photo')->storePublicly('products', $disk);
+            $path = Storage::putFile('products', $request->file('photo'), [
+                'visibility' => 'public', // S3 precisa disso, local ignora
+            ]);
+            $data['photo_path'] = $path; // <-- FALTAVA ISSO
         }
 
         $product = Product::create($data);
@@ -69,22 +68,23 @@ class ProductController extends Controller
             'photo'       => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $disk = config('filesystems.default');
-
         if ($request->hasFile('photo')) {
-            // remove a foto antiga (no mesmo disk atual)
+            // remove a antiga no disco padrão atual
             if ($product->photo_path) {
                 try {
-                    Storage::disk($disk)->delete($product->photo_path);
+                    Storage::delete($product->photo_path);
                 } catch (\Throwable $e) {
                     Log::warning('Falha ao remover imagem antiga', [
-                        'path' => $product->photo_path,
+                        'path'  => $product->photo_path,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
 
-            $data['photo_path'] = $request->file('photo')->storePublicly('products', $disk);
+            $path = Storage::putFile('products', $request->file('photo'), [
+                'visibility' => 'public',
+            ]);
+            $data['photo_path'] = $path;
         }
 
         $product->update($data);
@@ -97,11 +97,9 @@ class ProductController extends Controller
     // EXCLUIR (admin)
     public function destroy(Product $product)
     {
-        $disk = config('filesystems.default');
-
         try {
             if ($product->photo_path) {
-                Storage::disk($disk)->delete($product->photo_path);
+                Storage::delete($product->photo_path);
             }
 
             $product->delete();
