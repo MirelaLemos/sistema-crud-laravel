@@ -1,4 +1,5 @@
 @extends('layout')
+@php use Illuminate\Support\Facades\Storage; @endphp
 
 @section('title','Editar Produto')
 
