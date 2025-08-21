@@ -28,21 +28,21 @@ class ProductController extends Controller
         return view('products.create');
     }
 
-    // SALVAR (admin) — força upload no S3
+    // SALVAR (admin) — força upload no S3 sempre
     public function store(Request $request)
     {
         $data = $request->validate([
             'name'        => ['required', 'string', 'min:3', 'max:150'],
             'price'       => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'photo'       => ['nullable', 'image', 'max:2048'], // 2MB
+            'photo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         if ($request->hasFile('photo')) {
-            $disk = $this->preferredUploadDisk(); // 's3' se existir, senão default
-            // não setamos ACL/visibility (evita erro em bucket com ACL desativada)
-            $path = $request->file('photo')->store('products', $disk);
-            $data['photo_path'] = $path; // ex: products/abc.png
+            $this->assertS3Configured();
+            // não usamos ACL (compatível com bucket sem ACL)
+            $path = $request->file('photo')->store('products', 's3'); // >>> S3
+            $data['photo_path'] = $path; // ex: products/xyz.png
         }
 
         $product = Product::create($data);
@@ -58,22 +58,23 @@ class ProductController extends Controller
         return view('products.edit', compact('product'));
     }
 
-    // ATUALIZAR (admin) — apaga antiga e sobe nova (S3 por padrão)
+    // ATUALIZAR (admin) — apaga antiga e sobe nova (sempre no S3)
     public function update(Request $request, Product $product)
     {
         $data = $request->validate([
             'name'        => ['required', 'string', 'min:3', 'max:150'],
             'price'       => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'photo'       => ['nullable', 'image', 'max:2048'],
+            'photo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         if ($request->hasFile('photo')) {
-            // tenta remover do S3 e do local (caso antigos estejam em outro disco)
+            $this->assertS3Configured();
+
+            // remove imagem antiga (tenta em s3 e public)
             $this->safeDeleteFromKnownDisks($product->photo_path);
 
-            $disk = $this->preferredUploadDisk();
-            $path = $request->file('photo')->store('products', $disk);
+            $path = $request->file('photo')->store('products', 's3'); // >>> S3
             $data['photo_path'] = $path;
         }
 
@@ -89,7 +90,6 @@ class ProductController extends Controller
     {
         try {
             $this->safeDeleteFromKnownDisks($product->photo_path);
-
             $product->delete();
 
             return redirect()
@@ -109,20 +109,15 @@ class ProductController extends Controller
      * Helpers
      * ========================= */
 
-    /**
-     * Retorna o disco preferido para upload.
-     * Usa 's3' se estiver configurado; senão, cai no default do app.
-     */
-    protected function preferredUploadDisk(): string
+    /** Garante que o disco s3 exista/configurado; lança erro claro se não. */
+    protected function assertS3Configured(): void
     {
-        return array_key_exists('s3', config('filesystems.disks', []))
-            ? 's3'
-            : config('filesystems.default', 'public');
+        if (!array_key_exists('s3', config('filesystems.disks', []))) {
+            abort(500, 'Disco S3 não está configurado em config/filesystems.php');
+        }
     }
 
-    /**
-     * Tenta apagar um caminho conhecido em múltiplos discos (s3 e public).
-     */
+    /** Tenta apagar um caminho conhecido em múltiplos discos (s3 e public). */
     protected function safeDeleteFromKnownDisks(?string $path): void
     {
         if (!$path) return;

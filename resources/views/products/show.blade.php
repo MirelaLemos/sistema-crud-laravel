@@ -29,7 +29,7 @@
           // se tem só o path salvo
           $img = Str::startsWith($product->photo_path, ['http://','https://'])
               ? $product->photo_path
-              : Storage::url($product->photo_path);
+              : Storage::disk('s3')->url($product->photo_path);
       }
     @endphp
 
