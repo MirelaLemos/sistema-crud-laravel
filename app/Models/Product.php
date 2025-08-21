@@ -12,7 +12,12 @@ class Product extends Model
     use HasFactory;
 
     // ajuste conforme suas colunas
-    protected $fillable = ['name', 'description', 'price', 'photo_path'];
+    protected $fillable = [
+        'name',
+        'description',
+        'price',
+        'photo_path',  // se usar foto
+    ];
 
     // expõe "image_url" automaticamente em arrays/json
     protected $appends = ['image_url'];
