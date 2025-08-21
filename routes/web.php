@@ -7,7 +7,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 
-Route::get('/', fn() => view('welcome'));
+Route::get('/', fn () => redirect()->route('products.index'));
+
 
 Route::get('/dashboard', function () {
     return redirect()->route('products.index'); // ou outra rota já existente
